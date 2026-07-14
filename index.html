@@ -14,6 +14,7 @@
             --now-color: #dc3545;
             --soon-color: #fd7e14;
             --later-color: #198754;
+            --accent-bg: #fff5f5;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
@@ -28,18 +29,51 @@
         .route-card { border-bottom: 1px solid var(--border-color); padding: 10px 0; }
         .route-card:last-child { border-bottom: none; }
         
+        .route-header-clickable { cursor: pointer; transition: background-color 0.2s; border-radius: 4px; padding: 4px; margin: -4px; }
+        .route-header-clickable:hover { background-color: #fcfcfc; }
+        .route-header-clickable:active { background-color: #f1f3f5; }
+
         .route-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.85rem; }
         .route-info { font-weight: bold; }
         .route-num { color: var(--primary-color); font-size: 1.1rem; font-weight: 900; margin-right: 6px; }
         .stop-tag { color: var(--text-muted); font-size: 0.75rem; background: #f1f3f5; padding: 1px 6px; border-radius: 4px; }
 
-        .eta-list { display: flex; flex-direction: column; gap: 4px; }
+        .eta-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px;}
         .eta-item { display: flex; justify-content: space-between; font-size: 0.85rem; color: #4a5056; }
         
         .countdown { font-weight: bold; min-width: 65px; text-align: right; }
         .t-now { color: var(--now-color); animation: blink 1.5s infinite; }
         .t-soon { color: var(--soon-color); }
         .t-later { color: var(--later-color); }
+
+        .route-details-panel { 
+            max-height: 0; 
+            overflow: hidden; 
+            transition: max-height 0.3s ease-out, margin-top 0.3s; 
+            background: var(--accent-bg); 
+            border-radius: 6px; 
+            font-size: 0.8rem;
+            color: #555;
+        }
+        .route-details-panel.open { 
+            max-height: 320px; 
+            overflow-y: auto;
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px dashed #ffcccc;
+        }
+        .details-title { font-weight: bold; color: var(--primary-color); margin-bottom: 8px; border-bottom: 1px solid #ffe5e5; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .details-hint { font-size: 0.7rem; color: var(--text-muted); font-weight: normal; }
+        
+        .timeline { display: flex; flex-direction: column; gap: 8px; position: relative; padding-left: 15px; }
+        .timeline::before { content: ''; position: absolute; left: 4px; top: 5px; bottom: 5px; width: 2px; background: #ffcccc; }
+        .timeline-item { position: relative; display: flex; justify-content: space-between; align-items: center; }
+        .timeline-item::before { content: ''; position: absolute; left: -14px; top: 6px; width: 6px; height: 6px; border-radius: 50%; background: #ff4d4d; }
+        .timeline-item.current-stop { font-weight: bold; color: var(--primary-color); }
+        .timeline-item.current-stop::before { background: var(--primary-color); box-shadow: 0 0 0 3px rgba(225, 27, 34, 0.2); }
+        
+        .timeline-eta { font-size: 0.75rem; color: var(--text-muted); font-weight: normal; }
+        .timeline-item.current-stop .timeline-eta { color: var(--primary-color); font-weight: bold; }
 
         @keyframes blink { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
         .no-data { text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 8px 0; }
@@ -63,12 +97,65 @@
 </div>
 
 <script>
+    // 💡 結構已極度精簡，你只需手動校對好這裡的 id 即可！
+    // 提示：確保 stops 裡面「主車站」的 id 與外層的 stop_id 完全一模一樣！
     const MY_ROUTES_CONFIG = [
-        { route: "215X", direction: "往 藍田(廣田邨)總站", stop_id: "48184733EFE9D3E3", stop_name: "尖沙咀麼地道" },
-        { route: "14X", direction: "往 油塘", stop_id: "C175ACB534E8C15C", stop_name: "尖沙咀麼地道" },
-        { route: "98A", direction: "往 坑口(北)", stop_id: "3F9AE21DC3A540B9", stop_name: "牛頭角站" },
-        { route: "95M", direction: "往 翠林", stop_id: "00A529823BEBABA7", stop_name: "觀塘（雅麗道）總站" },
-        { route: "95", direction: "往 翠林", stop_id: "C91C122CFC3FF66B", stop_name: "佐敦炮台街" }
+        { 
+            route: "215X", direction: "往 藍田(廣田邨)", stop_id: "48184733EFE9D3E3", stop_name: "尖沙咀麼地道",
+            stops: [
+                { seq: 2, id: "31072508CEF942C6", name: "西隧轉車站 - 雅翔道" },
+                { seq: 3, id: "83EB94899B6BBB4B", name: "柯士甸道 戲曲中心" },
+                { seq: 4, id: "B7A8F179CD71B22E", name: "廣東道,新港中心" },
+                { seq: 5, id: "0840B3F75A7B00BD", name: "尖東站 K11 MUSEA" }, 
+                { seq: 6, id: "48184733EFE9D3E3", name: "尖沙咀麼地道" }, // 📍 主車站
+                { seq: 7, id: "E46A9F0C0CB609F5", name: "加連威老道" },
+                { seq: 8, id: "E45CFAB2E6E4C8FE", name: "香港理工大學" },
+                { seq: 9, id: "AA97FFC49AE957A5", name: "紅磡山谷道" }
+            ]
+        },
+        { 
+            route: "14X", direction: "往 鯉魚門", stop_id: "C175ACB534E8C15C", stop_name: "尖沙咀麼地道",
+            stops: [
+                { seq: 16, id: "D2217D7746597D10", name: "尖沙咀轉車站 - 中間道" },
+                { seq: 17, id: "0840B3F75A7B00BD", name: "尖東站 K11 MUSEA" },
+                { seq: 18, id: "C175ACB534E8C15C", name: "尖沙咀麼地道" }, // 📍 主車站
+                { seq: 19, id: "E46A9F0C0CB609F5", name: "加連威老道" },
+                { seq: 20, id: "E45CFAB2E6E4C8FE", name: "香港理工大學" },
+                { seq: 21, id: "A97FFC49AE957A5", name: "紅磡山谷道" },
+                { seq: 22, id: "BE27F066CF40DF7D", name: "啟隧轉車站-啟福道" }
+            ]
+        },
+        { 
+            route: "98A", direction: "往 坑口(北)", stop_id: "3F9AE21DC3A540B9", stop_name: "牛頭角站",
+            stops: [
+                { seq: 14, id: "25863CD2A364E72F", name: "秀暉樓" },
+                { seq: 15, id: "1E3A342DF7D5B8B5", name: "apm創紀之城5期" },
+                { seq: 16, id: "8BAB6AA783EE0508", name: "創紀之城" },
+                { seq: 17, id: "3F9AE21DC3A540B9", name: "牛頭角站" }, // 📍 主車站
+                { seq: 18, id: "5FD7848A339751B6", name: "觀塘市中心" },
+                { seq: 19, id: "36385EAEB9B9D091", name: "觀塘站" },
+                { seq: 20, id: "2A5B424322D35B0A", name: "觀塘游泳池" }
+            ]
+        },
+        { 
+            route: "95M", direction: "往 翠林", stop_id: "00A529823BEBABA7", stop_name: "觀塘（雅麗道）總站",
+            stops: [
+                { seq: 1, id: "00A529823BEBABA7", name: "觀塘（雅麗道）總站" }, // 📍 主車站
+                { seq: 2, id: "5FD7848A339751B6", name: "觀塘市中心" },
+                { seq: 3, id: "072046BF00257739", name: "和樂邨" },
+                { seq: 4, id: "BFF2560B1C1687B2", name: "聯合醫院" }
+            ]
+        },
+        { 
+            route: "95", direction: "往 翠林", stop_id: "C91C122CFC3FF66B", stop_name: "佐敦炮台街",
+            stops: [
+                { seq: 2, id: "31072508CEF942C6", name: "西隧轉車站 - 雅翔道" },
+                { seq: 3, id: "450A96AF1DA8E41C", name: "柯士甸站" },
+                { seq: 4, id: "C91C122CFC3FF66B", name: "佐敦炮台街" }, // 📍 主車站
+                { seq: 5, id: "0E9F8B5A3734D9CE", name: "油麻地寧波街" },
+                { seq: 6, id: "0E9F8B5A3734D9CE", name: "九龍中央郵政局" }
+            ]
+        }
     ];
 
     let countdownInterval;
@@ -88,26 +175,20 @@
         return { mins: diffMins, timeString: formattedTime };
     }
 
-    // 🆕 新增：排序並過濾掉相同時間班次的函數
+    // 🌟 終極過濾修正：完全不看 dir, 不看 service_type，只要路線相同就抓！
     function filterAndSortEtas(routeEtas) {
-        // 先按時間先後排序
         routeEtas.sort((a, b) => new Date(a.eta) - new Date(b.eta));
-        
         const uniqueEtas = [];
         const seenTimes = new Set();
         
         routeEtas.forEach(item => {
             const timeInfo = calculateMins(item.eta);
             if (!timeInfo) return;
-            
-            // 如果這個預算時間（例如 "18:45"）還沒出現過，才放入清單
             if (!seenTimes.has(timeInfo.timeString)) {
                 seenTimes.add(timeInfo.timeString);
                 uniqueEtas.push(item);
             }
         });
-        
-        // 只保留前 2 班不重複的車
         return uniqueEtas.slice(0, 2);
     }
 
@@ -126,18 +207,19 @@
 
             let html = '';
 
-            MY_ROUTES_CONFIG.forEach(cfg => {
+            MY_ROUTES_CONFIG.forEach((cfg, idx) => {
                 const allEta = etaMap.get(cfg.stop_id) || [];
+                // 🌟 只比對 route
                 let routeEtas = allEta.filter(item => item.route === cfg.route && item.eta);
-                
-                // 🔄 修改處：改用新寫好的過濾器洗一洗，完美排除重複時間
                 const nextTwo = filterAndSortEtas(routeEtas);
 
                 html += `
                     <div class="route-card">
-                        <div class="route-meta">
-                            <div class="route-info"><span class="route-num">${cfg.route}</span>${cfg.direction}</div>
-                            <span class="stop-tag">📍 ${cfg.stop_name}</span>
+                        <div class="route-header-clickable" onclick="toggleRouteDetails(${idx})">
+                            <div class="route-meta">
+                                <div class="route-info"><span class="route-num">${cfg.route}</span>${cfg.direction}</div>
+                                <span class="stop-tag">📍 ${cfg.stop_name}</span>
+                            </div>
                         </div>
                         <div class="eta-list">
                 `;
@@ -163,7 +245,12 @@
                         `;
                     });
                 }
-                html += `</div></div>`;
+                
+                html += `
+                        </div>
+                        <div id="details-${idx}" class="route-details-panel"></div>
+                    </div>
+                `;
             });
 
             dashboardArea.innerHTML = html;
@@ -171,6 +258,84 @@
             resetTimer();
         } catch (e) {
             dashboardArea.innerHTML = `<div class="no-data">更新失敗: ${e.message}</div>`;
+        }
+    }
+
+    // 🌟 自動切片算法（前2 + 本站 + 後2）
+    async function toggleRouteDetails(configIdx) {
+        const panel = document.getElementById(`details-${configIdx}`);
+        const cfg = MY_ROUTES_CONFIG[configIdx];
+        
+        if (panel.classList.contains('open')) {
+            panel.classList.remove('open');
+            return;
+        }
+
+        panel.innerHTML = `<div style="text-align:center; padding: 10px; color:#999;">🔍 正在獲取臨近分站時間...</div>`;
+        panel.classList.add('open');
+
+        try {
+            // 用當前的 stop_id 去精確定位「本站」在 stops 陣列中的 Index
+            const currentIdx = cfg.stops.findIndex(s => s.id === cfg.stop_id);
+            
+            if (currentIdx === -1) {
+                panel.innerHTML = `<div style="padding:10px; color:red; text-align:center;">⚠️ 錯誤：找不到主車站 ID，請檢查 stops 配置</div>`;
+                return;
+            }
+
+            // 切出前後各2站，合共最多5站
+            const startIdx = Math.max(0, currentIdx - 2);
+            const endIdx = Math.min(cfg.stops.length, currentIdx + 3);
+            const slicedStops = cfg.stops.slice(startIdx, endIdx);
+
+            const fetchPromises = slicedStops.map(async (stop) => {
+                try {
+                    const res = await fetch(`https://data.etabus.gov.hk/v1/transport/kmb/stop-eta/${stop.id}`);
+                    if (res.ok) {
+                        const json = await res.json();
+                        // 🌟 同樣在此處放寬過濾，只認 route
+                        const routeMatches = (json.data || []).filter(item => item.route === cfg.route && item.eta);
+                        return { stopId: stop.id, etas: filterAndSortEtas(routeMatches) };
+                    }
+                } catch (e) { console.error(e); }
+                return { stopId: stop.id, etas: [] };
+            });
+
+            const results = await Promise.all(fetchPromises);
+            const stopEtaMap = new Map(results.map(r => [r.stopId, r.etas]));
+
+            let detailsHtml = `
+                <div class="details-title">
+                    <span>🗺️ 臨近分站動態</span>
+                    <span class="details-hint">(前後5站看板)</span>
+                </div>`;
+            detailsHtml += `<div class="timeline">`;
+
+            slicedStops.forEach((stop) => {
+                const isCurrent = stop.id === cfg.stop_id;
+                const stopEtas = stopEtaMap.get(stop.id) || [];
+                
+                let etaDisplay = "--:--";
+                if (stopEtas.length > 0) {
+                    const timeInfo = calculateMins(stopEtas[0].eta);
+                    if (timeInfo) {
+                        etaDisplay = timeInfo.mins === 0 ? "即將到站" : `${timeInfo.mins}分鐘`;
+                    }
+                }
+
+                detailsHtml += `
+                    <div class="timeline-item ${isCurrent ? 'current-stop' : ''}">
+                        <span>${stop.seq}. ${stop.name}</span>
+                        <span class="timeline-eta">${isCurrent ? '📍 ' : ''}${etaDisplay}</span>
+                    </div>
+                `;
+            });
+
+            detailsHtml += `</div>`;
+            panel.innerHTML = detailsHtml;
+
+        } catch (err) {
+            panel.innerHTML = `<div style="padding:10px; color:red; text-align:center;">⚠️ 加載失敗</div>`;
         }
     }
 
